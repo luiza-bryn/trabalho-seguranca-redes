@@ -1,0 +1,7 @@
+{
+  "alice": {
+    "salt_pbkdf2": "TOrYP7bXP3DFjlBe61rQzQ==",
+    "salt_scrypt": "iaTjTJh6meMIAbD20ibRfw==",
+    "password_hash": "hIp00UyW0tosGeuNjdU87Ksd4cMGr8+uD/gHdpW8gqYsSkhOqu6+cWcw+WfxNTebVqkba0neIZDsLyXwJvL7ig=="
+  }
+}
