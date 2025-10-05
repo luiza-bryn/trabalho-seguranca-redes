@@ -161,4 +161,13 @@ def criar_janela_principal(cli):
 if __name__ == "__main__":
     srv = Server()
     cli = Client(srv)
-    criar_janela_inicial(cli)
+
+   # cli.register("aa", "123")
+    cli.login("aa", "123")
+    print(cli.username)
+    cli.enviar_arquivo("source/texto.txt")
+
+    #criar_janela_inicial(cli)
+    # if cli.logado:
+    #     criar_janela_principal(cli)
+

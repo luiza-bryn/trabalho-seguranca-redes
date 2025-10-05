@@ -4,6 +4,7 @@ import base64
 import secrets
 import hashlib
 import time
+import os
 from typing import Optional
 
 
@@ -87,10 +88,12 @@ class Server:
             return False
         return True
 
-    def receber_arquivo(self, username: str, nonce, conteudo_cifrado, tag) -> bool:
+    def receber_arquivo(self, username: str, nonce, conteudo_cifrado, tag, filename) -> bool:
+        path = f"source/arquivos_servidor/{username}"
+        if not os.path.exists(path):
+            os.makedirs(path)
         try:
-            with open(f"source/received_{username}_{filename}", "wb") as f_out:
-                f_out.write(salt)
+            with open(f"source/arquivos_servidor/{username}/{filename}", "wb") as f_out:
                 f_out.write(nonce)
                 f_out.write(tag)
                 f_out.write(conteudo_cifrado)

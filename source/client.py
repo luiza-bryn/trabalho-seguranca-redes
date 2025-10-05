@@ -16,6 +16,7 @@ class Client:
         self.username = None
         self.totp_secret = None
         self.salt = None
+        self.logado = False
         with open("source/users.json", "r", encoding="utf-8") as f:
             self.salts = json.load(f)
 
@@ -29,11 +30,11 @@ class Client:
             self.salts = json.load(f)
 
     def _pbkdf2(self, password: str, salt: bytes, iterations=1000) -> bytes:
-        return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, iterations, dklen=20)
+        return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, iterations, dklen=32)
 
     def _encrypt_file_aes_gcm(self, key, input_path: str):
-        cipher = AES.new(key, AES.MODE_GCM)   # GCM fornece autenticação (tag)
-        nonce = cipher.nonce                  # 12 bytes em PyCryptodome
+        cipher = AES.new(key, AES.MODE_GCM)
+        nonce = cipher.nonce
 
         with open(input_path, "rb") as f:
             texto_plano = f.read()
@@ -113,24 +114,21 @@ class Client:
             totp_ok = True
         if password_ok and totp_ok:
             self.username = username
+            self.logado = True
         return password_ok, totp_ok
 
     def enviar_arquivo(self, filepath: str) -> bool:
-        try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                conteudo = f.read()
+        # try:
             # cifrar conteudo do arquivo antes de enviar
-            chave_simetrica = self._pbkdf2(self.username, self.salt)
+            chave_simetrica = self._pbkdf2(password=self.username, salt=self.salt)
             # cifrar conteudo com a chave
-
-            self.server.receive_file(self.username, conteudo)
-            destino = filepath.split("/")[-1]
-            with open(f"source/arquivos_servidor/{destino}", "w", encoding="utf-8") as f:
-                f.write(conteudo)
+            nonce, tag, conteudo = self._encrypt_file_aes_gcm(chave_simetrica, filepath)
+            # enviar para o servidor
+            self.server.receber_arquivo(self.username, nonce, conteudo, tag, filepath.split("/")[-1])
             return True
-        except Exception as e:
-            print(f"Erro ao enviar arquivo: {e}")
-            return False
+        # except Exception as e:
+        #     print(f"Erro ao enviar arquivo: {e}")
+        #     return False
     
     def listar_arquivos(self) -> Optional[list]:
         try:

@@ -1,7 +1,7 @@
 {
-  "luiza": {
-    "salt_pbkdf2": "Kval/Q3sl2g4b3r+OPi23A==",
-    "salt_scrypt": "qf/EERzOPgXiSAEzz2q0oQ==",
-    "password_hash": "Su0gOIXQkbnBnExOQRcNizS+FR38EjUIKR9HkqbInozbiOF+SqTX2HaxxzGbIWfpbBHBJPuxftakjirFaSNE8w=="
+  "aa": {
+    "salt_pbkdf2": "+NI11bb504fjn4dxATZGpQ==",
+    "salt_scrypt": "6EBM1dVnYqZgX0r5ZyMnaQ==",
+    "password_hash": "nzXqZMGLaN/h+UTlICIZQqB3FKgjb808NhrOB7uEJM2p2iau8ysRY33tyh5Qmp7N6Uakx1xZmMTxj63l9XSSkg=="
   }
 }
