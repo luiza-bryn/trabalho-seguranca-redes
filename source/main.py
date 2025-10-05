@@ -2,6 +2,8 @@ from client import Client
 from servidor import Server
 import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog
+from tkinter.scrolledtext import ScrolledText
+import os
 
 # Supondo que Server e Client já estejam definidos/importados
 
@@ -138,10 +140,7 @@ def criar_janela_principal(cli):
                 messagebox.showwarning("Aviso", "Selecione um arquivo.")
                 return
             nome = listbox.get(selecao[0])
-            destino = filedialog.asksaveasfilename(initialfile=nome, title="Salvar como")
-            if not destino:
-                return
-            sucesso = cli.baixar_arquivo(nome, destino)
+            sucesso = cli.baixar_arquivo(nome)
             if sucesso:
                 messagebox.showinfo("Sucesso", "Arquivo baixado com sucesso!")
             else:
@@ -149,12 +148,65 @@ def criar_janela_principal(cli):
 
         tk.Button(janela_lista, text="Baixar", command=baixar, bg="#0078D7", fg="white").pack(pady=10)
 
+    def listar_arquivos_baixados():
+        arquivos = os.listdir("source/arquivos_locais") 
+        
+        if not arquivos:
+            messagebox.showinfo("Info", "Nenhum arquivo baixado localmente.")
+            return
+
+        janela_baixados = tk.Toplevel(janela)
+        janela_baixados.title("Arquivos Baixados")
+        janela_baixados.geometry("300x250")
+
+        tk.Label(janela_baixados, text="Arquivos baixados localmente:").pack(pady=5)
+
+        listbox = tk.Listbox(janela_baixados, width=40, height=10)
+        for arq in arquivos:
+            listbox.insert(tk.END, arq)
+        listbox.pack(pady=5)
+
+        def decifrar():
+            selecao = listbox.curselection()
+            if not selecao:
+                messagebox.showwarning("Aviso", "Selecione um arquivo.")
+                return
+
+            nome = listbox.get(selecao[0])
+            sucesso = cli.decifrar_documento(nome)
+            caminho_decifrado = f"source/arquivos_locais_decifrados/decifrado_{nome}"
+
+            if sucesso:
+                # Abre nova janela para exibir o conteúdo
+                janela_visualizador = tk.Toplevel(janela_baixados)
+                janela_visualizador.title(f"Visualizando: decifrado_{nome}")
+                janela_visualizador.geometry("700x500")
+
+                tk.Label(janela_visualizador, text=f"Conteúdo de: decifrado_{nome}", font=("Arial", 10, "bold")).pack(pady=5)
+
+                texto = ScrolledText(janela_visualizador, wrap=tk.WORD, width=80, height=25)
+                texto.pack(padx=10, pady=10)
+
+                try:
+                    with open(caminho_decifrado, 'r', encoding='utf-8') as f:
+                        conteudo = f.read()
+                    texto.insert(tk.END, conteudo)
+                except FileNotFoundError:
+                    texto.insert(tk.END, f"Arquivo não encontrado: {caminho_decifrado}")
+
+                messagebox.showinfo("Sucesso", f"Arquivo '{nome}' decifrado com sucesso!")
+            else:
+                messagebox.showerror("Erro", "Falha ao decifrar o arquivo.")
+
+        tk.Button(janela_baixados, text="Decifrar", command=decifrar, bg="#0078D7", fg="white").pack(pady=10)
+
     # Frame com botões lado a lado
     frame_botoes = tk.Frame(janela)
     frame_botoes.pack(pady=30)
 
     tk.Button(frame_botoes, text="Subir Arquivo", command=subir_arquivo, width=15, bg="#0078D7", fg="white").pack(side=tk.LEFT, padx=10)
-    tk.Button(frame_botoes, text="Resgatar Arquivo", command=resgatar_arquivo, width=15, bg="#0078D7", fg="white").pack(side=tk.LEFT, padx=10)
+    tk.Button(frame_botoes, text="Baixar Arquivo", command=resgatar_arquivo, width=15, bg="#0078D7", fg="white").pack(side=tk.LEFT, padx=10)
+    tk.Button(frame_botoes, text="Arquivos baixados", command=listar_arquivos_baixados, width=15, bg="#0078D7", fg="white").pack(side=tk.LEFT, padx=10)
 
     janela.mainloop()
 
@@ -162,12 +214,14 @@ if __name__ == "__main__":
     srv = Server()
     cli = Client(srv)
 
-   # cli.register("aa", "123")
-    cli.login("aa", "123")
-    print(cli.username)
-    cli.enviar_arquivo("source/texto.txt")
+    # cli.register("aa", "123")
+    # cli.login("aa", "123")
+    # print(cli.username)
+    # cli.enviar_arquivo("source/texto.txt")
+    # cli.baixar_arquivo("texto.txt")
+    # cli.decifrar_documento("texto.txt")
 
-    #criar_janela_inicial(cli)
-    # if cli.logado:
-    #     criar_janela_principal(cli)
+    criar_janela_inicial(cli)
+    if cli.logado:
+        criar_janela_principal(cli)
 

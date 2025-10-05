@@ -9,6 +9,7 @@ from servidor import Server
 from Crypto.Cipher import AES
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Random import get_random_bytes
+from Crypto.Hash import SHA256
 
 class Client:
     def __init__(self, server: Server):
@@ -29,6 +30,9 @@ class Client:
         with open("source/users.json", "r", encoding="utf-8") as f:
             self.salts = json.load(f)
 
+    def _derive_key(self, password: bytes, salt: bytes, iterations=200_000, dklen=32):
+        return PBKDF2(password, salt, dkLen=dklen, count=iterations, hmac_hash_module=SHA256)
+    
     def _pbkdf2(self, password: str, salt: bytes, iterations=1000) -> bytes:
         return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, iterations, dklen=32)
 
@@ -118,35 +122,51 @@ class Client:
         return password_ok, totp_ok
 
     def enviar_arquivo(self, filepath: str) -> bool:
-        # try:
+        try:
             # cifrar conteudo do arquivo antes de enviar
-            chave_simetrica = self._pbkdf2(password=self.username, salt=self.salt)
+            username_bytes = self.username.encode('utf-8')
+            chave_simetrica = self._derive_key(password=username_bytes, salt=self.salt)
             # cifrar conteudo com a chave
             nonce, tag, conteudo = self._encrypt_file_aes_gcm(chave_simetrica, filepath)
             # enviar para o servidor
             self.server.receber_arquivo(self.username, nonce, conteudo, tag, filepath.split("/")[-1])
             return True
-        # except Exception as e:
-        #     print(f"Erro ao enviar arquivo: {e}")
-        #     return False
+        except Exception as e:
+            print(f"Erro ao enviar arquivo: {e}")
+            return False
     
     def listar_arquivos(self) -> Optional[list]:
         try:
-            arquivos = self.server.list_files(self.username)
+            arquivos = self.server.listar_arquivos(self.username)
             return arquivos
         except Exception as e:
             print(f"Erro ao listar arquivos: {e}")
             return None
     
-    def baixar_arquivo(self, filename: str, destino: str) -> bool:
+    def baixar_arquivo(self, filename: str) -> bool:
         try:
-            conteudo = self.server.send_file(self.username, filename)
-            if conteudo is None:
-                print("Arquivo não encontrado no servidor.")
-                return False
-            with open(destino, "w", encoding="utf-8") as f:
-                f.write(conteudo)
+            conteudo_cifrado, nonce, tag = self.server.enviar_arquivo(self.username, filename)
+            with open(f"source/arquivos_locais/{filename}", "wb") as f_out:
+                f_out.write(nonce)
+                f_out.write(tag)
+                f_out.write(conteudo_cifrado)
             return True
         except Exception as e:
             print(f"Erro ao baixar arquivo: {e}")
+            return False
+    
+    def decifrar_documento(self, file: str) -> bool:
+        try:
+            username_bytes = self.username.encode('utf-8')
+            chave_simetrica = self._derive_key(password=username_bytes, salt=self.salt)
+            with open(f"source/arquivos_locais/{file}", "rb") as f_in:
+                nonce = f_in.read(16)
+                tag = f_in.read(16) 
+                conteudo_cifrado = f_in.read()
+            conteudo = self._decrypt_aes_gcm(chave_simetrica, nonce, tag, conteudo_cifrado)
+            with open(f"source/arquivos_locais_decifrados/decifrado_{file}", "wb") as f_out:
+                f_out.write(conteudo)
+            return True
+        except Exception as e:
+            print(f"Erro ao decifrar arquivo: {e}")
             return False

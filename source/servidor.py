@@ -104,9 +104,22 @@ class Server:
     
     def enviar_arquivo(self, username: str, filename) -> bool:
         try:
-            with open(f"source/sent_{username}_{filename}", "r") as f_out:
-                conteudo = f_out.read()
-            return conteudo
+            with open(f"source/arquivos_servidor/{username}/{filename}", "rb") as f_in:
+                nonce = f_in.read(16)         # 16 bytes é o tamanho padrão do nonce no AES-GCM
+                tag = f_in.read(16)           # 16 bytes padrão do tag
+                conteudo_cifrado = f_in.read()  # resto do arquivo é o conteúdo cifrado
+            return conteudo_cifrado, nonce, tag
         except Exception as e:
             print(f"Erro ao ler arquivo: {e}")
             return False
+    
+    def listar_arquivos(self, username: str) -> Optional[list]:
+        path = f"source/arquivos_servidor/{username}"
+        if not os.path.exists(path):
+            return []
+        try:
+            arquivos = os.listdir(path)
+            return arquivos
+        except Exception as e:
+            print(f"Erro ao listar arquivos: {e}")
+            return None
