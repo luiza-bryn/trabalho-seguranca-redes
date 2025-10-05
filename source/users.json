@@ -1,6 +1,7 @@
 {
-  "alice": {
-    "salt_scrypt": "1uytu4jYWD0SIpPg7tGXkw==",
-    "password_hash": "dkj9ad5Xql9OTRKH5T2YIprt4uqMkai4qmfWWXCTfo4LItrePjj7kMM6j5LVP4VOuaomvEw81kRHBCLvZ4xnUw=="
+  "luiza": {
+    "salt_pbkdf2": "Kval/Q3sl2g4b3r+OPi23A==",
+    "salt_scrypt": "qf/EERzOPgXiSAEzz2q0oQ==",
+    "password_hash": "Su0gOIXQkbnBnExOQRcNizS+FR38EjUIKR9HkqbInozbiOF+SqTX2HaxxzGbIWfpbBHBJPuxftakjirFaSNE8w=="
   }
 }

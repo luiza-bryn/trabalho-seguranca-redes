@@ -6,7 +6,9 @@ import base64
 import secrets
 from typing import Optional
 from servidor import Server
-
+from Crypto.Cipher import AES
+from Crypto.Protocol.KDF import PBKDF2
+from Crypto.Random import get_random_bytes
 
 class Client:
     def __init__(self, server: Server):
@@ -14,18 +16,36 @@ class Client:
         self.username = None
         self.totp_secret = None
         self.salt = None
-        with open("source/local.json", "r", encoding="utf-8") as f:
+        with open("source/users.json", "r", encoding="utf-8") as f:
             self.salts = json.load(f)
 
     def _new_salt(self, nbytes=16):
         return secrets.token_bytes(nbytes)
 
-    def save_user(self, user):
-        with open("source/local.json", "w", encoding="utf-8") as f:
+    def _save_user(self, user):
+        with open("source/users.json", "w", encoding="utf-8") as f:
             json.dump(user, f, indent=2)
+        with open("source/users.json", "r", encoding="utf-8") as f:
+            self.salts = json.load(f)
 
     def _pbkdf2(self, password: str, salt: bytes, iterations=1000) -> bytes:
         return hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, iterations, dklen=20)
+
+    def _encrypt_file_aes_gcm(self, key, input_path: str):
+        cipher = AES.new(key, AES.MODE_GCM)   # GCM fornece autenticação (tag)
+        nonce = cipher.nonce                  # 12 bytes em PyCryptodome
+
+        with open(input_path, "rb") as f:
+            texto_plano = f.read()
+        texto_cifrado, tag = cipher.encrypt_and_digest(texto_plano)
+
+        return nonce, tag, texto_cifrado
+
+    def _decrypt_aes_gcm(self, key, nonce, tag, texto_cifrado):
+        cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
+        plaintext = cipher.decrypt_and_verify(texto_cifrado, tag)
+
+        return plaintext
 
     def _totp_like_internal(self, key, digits: int = 6) -> str:
         """
@@ -62,7 +82,7 @@ class Client:
         user = {username: {
             "salt_pbkdf2": base64.b64encode(self.salt).decode('utf-8')
         }}
-        self.save_user(user)
+        self._save_user(user)
         
         key_dv = self._pbkdf2(password, self.salt)
 
@@ -71,13 +91,13 @@ class Client:
             self.username = username
         else:
             print("Erro:", resp.get("error"))
+        return resp
 
     def login(self, username: str, password: str) -> bool:
         # Verifica se usuário existe localmente e resgata salt
-        with open("source/local.json", "r", encoding="utf-8") as f:
+        with open("source/users.json", "r", encoding="utf-8") as f:
             self.salts = json.load(f)
         if username not in self.salts:
-            print("Usuário não encontrado localmente.")
             return False, False
         else:
             self.salt = base64.b64decode(self.salts[username]["salt_pbkdf2"])
@@ -95,3 +115,40 @@ class Client:
             self.username = username
         return password_ok, totp_ok
 
+    def enviar_arquivo(self, filepath: str) -> bool:
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                conteudo = f.read()
+            # cifrar conteudo do arquivo antes de enviar
+            chave_simetrica = self._pbkdf2(self.username, self.salt)
+            # cifrar conteudo com a chave
+
+            self.server.receive_file(self.username, conteudo)
+            destino = filepath.split("/")[-1]
+            with open(f"source/arquivos_servidor/{destino}", "w", encoding="utf-8") as f:
+                f.write(conteudo)
+            return True
+        except Exception as e:
+            print(f"Erro ao enviar arquivo: {e}")
+            return False
+    
+    def listar_arquivos(self) -> Optional[list]:
+        try:
+            arquivos = self.server.list_files(self.username)
+            return arquivos
+        except Exception as e:
+            print(f"Erro ao listar arquivos: {e}")
+            return None
+    
+    def baixar_arquivo(self, filename: str, destino: str) -> bool:
+        try:
+            conteudo = self.server.send_file(self.username, filename)
+            if conteudo is None:
+                print("Arquivo não encontrado no servidor.")
+                return False
+            with open(destino, "w", encoding="utf-8") as f:
+                f.write(conteudo)
+            return True
+        except Exception as e:
+            print(f"Erro ao baixar arquivo: {e}")
+            return False

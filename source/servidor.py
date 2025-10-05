@@ -51,7 +51,7 @@ class Server:
         return code
     
     def register(self, username: str, password: str) -> dict:
-        if username in self.users:
+        if username in self.users and "password_hash" in self.users[username]:
             return {"ok": False, "error": "Usuário já existe"}
         with open("source/users.json", "r", encoding="utf-8") as f:
             self.users = json.load(f)
@@ -60,10 +60,10 @@ class Server:
 
         pwd_hash = self._scrypt_hash(password, salt_scrypt)
 
-        self.users[username] = {
+        self.users[username].update({
             "salt_scrypt": base64.b64encode(salt_scrypt).decode('utf-8'),
             "password_hash": base64.b64encode(pwd_hash).decode('utf-8')
-        }
+        })
 
         with open("source/users.json", "w") as f:
             json.dump(self.users, f, indent=2)
@@ -72,8 +72,6 @@ class Server:
 
     def verify_password(self, username: str, password) -> bool:
         record = self.users.get(username)
-        print(record)
-        print(record["salt_scrypt"])
         if not record:
             return False
         salt_scrypt = base64.b64decode(record["salt_scrypt"])
@@ -85,5 +83,27 @@ class Server:
     def verify_totp(self, key, totp_expected) -> bool:
         totp = self._totp_like_internal(key)
         if totp != totp_expected:
+            print(f"Erro na autenticação. TOTP incorreto")
             return False
         return True
+
+    def receber_arquivo(self, username: str, nonce, conteudo_cifrado, tag) -> bool:
+        try:
+            with open(f"source/received_{username}_{filename}", "wb") as f_out:
+                f_out.write(salt)
+                f_out.write(nonce)
+                f_out.write(tag)
+                f_out.write(conteudo_cifrado)
+            return True
+        except Exception as e:
+            print(f"Erro ao salvar arquivo: {e}")
+            return False
+    
+    def enviar_arquivo(self, username: str, filename) -> bool:
+        try:
+            with open(f"source/sent_{username}_{filename}", "r") as f_out:
+                conteudo = f_out.read()
+            return conteudo
+        except Exception as e:
+            print(f"Erro ao ler arquivo: {e}")
+            return False
