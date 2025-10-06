@@ -3,5 +3,15 @@
     "salt_pbkdf2": "sMtDgTTZ9h0mhp5xoe6uKw==",
     "salt_scrypt": "sn8QALMAxEAI3fPd85us5A==",
     "password_hash": "FFPcqT+IfRGYCveKXyUaoe+QRofv9GXJJUVm/PsFKdM2kqdEb+ycsoNf7eYkG57aPAQ1O8E5+zMi5u1bZOc5OQ=="
+  },
+  "aa": {
+    "salt_pbkdf2": "yyGgp+LwYN2y99tLz/IgrA==",
+    "salt_scrypt": "zRxiqZ+u11vbu41rlANi+Q==",
+    "password_hash": "tb9pK+QzsV4/KppL321Gc5faEqg6SS6tgvt4V3M53HicTI/+exhlxrwRV42ZffIurB8Qmfu+sXod8JKidy091A=="
+  },
+  "luiza": {
+    "salt_pbkdf2": "0eezMV5nJ0ZLosLRbWn0kg==",
+    "salt_scrypt": "A25KNki2laxVERkGys5oMw==",
+    "password_hash": "zcX0PZX+NTXCqc/Gg5zDeZHz93NxJQBu26jLf3NfxMC5xsyF7xnOpJJVmIKu4yVsvWra5JvNCx2lJvWQj4exfw=="
   }
 }

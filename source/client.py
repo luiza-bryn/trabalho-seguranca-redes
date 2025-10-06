@@ -24,11 +24,9 @@ class Client:
     def _new_salt(self, nbytes=16):
         return secrets.token_bytes(nbytes)
 
-    def _save_user(self, user):
+    def _save_user(self):
         with open("source/users.json", "w", encoding="utf-8") as f:
-            json.dump(user, f, indent=2)
-        with open("source/users.json", "r", encoding="utf-8") as f:
-            self.salts = json.load(f)
+            json.dump(self.salts, f, indent=2)
 
     def _derive_key(self, password: bytes, salt: bytes, iterations=200_000, dklen=32):
         return PBKDF2(password, salt, dkLen=dklen, count=iterations, hmac_hash_module=SHA256)
@@ -84,11 +82,8 @@ class Client:
         self.salt = self._new_salt(16)
         
         # Armazena salt localmente 
-        user = {username: {
-            "salt_pbkdf2": base64.b64encode(self.salt).decode('utf-8')
-        }}
-        self._save_user(user)
-        
+        self.salts[username] = {"salt_pbkdf2": base64.b64encode(self.salt).decode('utf-8')}
+        self._save_user()
         key_dv = self._pbkdf2(password, self.salt)
 
         resp = self.server.register(username, key_dv)
